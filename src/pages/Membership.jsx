@@ -1,0 +1,306 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import Navbar from '../components/Navbar';
+import { Link, useNavigate } from 'react-router-dom';
+
+const Membership = () => {
+  const [selectedPlan, setSelectedPlan] = useState('basic');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const plans = [
+    {
+      id: 'basic',
+      name: 'Basic Membership',
+      price: 'Free',
+      duration: 'Lifetime',
+      features: [
+        'Access to public events',
+        'Play basic games',
+        'View leaderboards',
+        'Community access',
+        'Basic profile features'
+      ],
+      icon: '🎮',
+      color: 'from-blue-500 to-cyan-500',
+      recommended: false
+    },
+    {
+      id: 'premium',
+      name: 'Premium Membership',
+      price: '₹299',
+      duration: 'Per Semester',
+      features: [
+        'All Basic features',
+        'Priority event registration',
+        'Exclusive premium games',
+        'Advanced analytics',
+        'Custom profile themes',
+        'Certificate of excellence',
+        'Monthly rewards',
+        'Early access to new features'
+      ],
+      icon: '⭐',
+      color: 'from-purple-500 to-pink-500',
+      recommended: true
+    }
+  ];
+
+  const benefits = [
+    { icon: '🎯', title: 'Skill Development', description: 'Enhance your skills through competitions and workshops' },
+    { icon: '🤝', title: 'Networking', description: 'Connect with talented peers and industry professionals' },
+    { icon: '🏆', title: 'Recognition', description: 'Get recognized for your achievements and contributions' },
+    { icon: '📚', title: 'Learning Resources', description: 'Access exclusive learning materials and tutorials' },
+    { icon: '🎁', title: 'Rewards & Prizes', description: 'Win exciting prizes and certificates in competitions' },
+    { icon: '🚀', title: 'Career Growth', description: 'Build your portfolio and enhance career opportunities' }
+  ];
+
+  const handleJoinMembership = async (planId) => {
+    setIsLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      const user = JSON.parse(localStorage.getItem('user')) || {};
+      user.role = 'member';
+      user.membershipPlan = planId;
+      user.membershipSince = new Date().toISOString();
+      localStorage.setItem('user', JSON.stringify(user));
+      navigate('/dashboard');
+      setIsLoading(false);
+    }, 2000);
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        delayChildren: 0.3,
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 30, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.8,
+        ease: [0.6, -0.05, 0.01, 0.9]
+      }
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
+      <Navbar />
+      
+      <section className="pt-32 pb-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <h1 className="text-5xl font-bold text-white mb-4">
+              Join <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Tesseract</span>
+            </h1>
+            <p className="text-xl text-white/80 max-w-2xl mx-auto">
+              Become a member and unlock exclusive features, events, and opportunities 
+              to grow your skills and connect with the IITM BS community.
+            </p>
+          </motion.div>
+
+          {/* Membership Plans */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16"
+          >
+            {plans.map((plan) => (
+              <motion.div
+                key={plan.id}
+                variants={itemVariants}
+                whileHover={{ y: -10 }}
+                className={`relative glass rounded-3xl p-8 hover:bg-white/10 transition-all ${
+                  plan.recommended ? 'ring-2 ring-purple-400' : ''
+                }`}
+              >
+                {plan.recommended && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-bold rounded-full">
+                      RECOMMENDED
+                    </span>
+                  </div>
+                )}
+
+                <div className="text-center mb-8">
+                  <div className={`w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r ${plan.color} flex items-center justify-center text-3xl`}>
+                    {plan.icon}
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                  <div className="text-4xl font-bold text-white mb-1">{plan.price}</div>
+                  <div className="text-white/60">{plan.duration}</div>
+                </div>
+
+                <div className="space-y-4 mb-8">
+                  {plan.features.map((feature, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-white/80">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleJoinMembership(plan.id)}
+                  disabled={isLoading}
+                  className={`w-full py-4 font-bold rounded-xl hover:shadow-xl transition-all duration-300 btn-hover ${
+                    plan.recommended
+                      ? 'btn-gradient text-white'
+                      : 'glass text-white hover:bg-white/20'
+                  } disabled:opacity-50`}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </span>
+                  ) : (
+                    `Join ${plan.name}`
+                  )}
+                </motion.button>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Benefits Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="mb-16"
+          >
+            <h2 className="text-3xl font-bold text-white text-center mb-12">Why Join Tesseract?</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {benefits.map((benefit, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
+                  whileHover={{ y: -5 }}
+                  className="glass rounded-2xl p-6 text-center hover:bg-white/10 transition-all"
+                >
+                  <div className="text-4xl mb-4">{benefit.icon}</div>
+                  <h3 className="text-xl font-semibold text-white mb-2">{benefit.title}</h3>
+                  <p className="text-white/70">{benefit.description}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Testimonials */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="glass rounded-3xl p-12"
+          >
+            <h2 className="text-3xl font-bold text-white text-center mb-12">What Our Members Say</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                {
+                  name: 'Priya Sharma',
+                  role: 'BS2023, Computer Science',
+                  content: 'Tesseract helped me discover my passion for game development. The events and community are amazing!',
+                  avatar: '👩‍💻'
+                },
+                {
+                  name: 'Rahul Kumar',
+                  role: 'BS2022, Data Science',
+                  content: 'The competitions and workshops have been invaluable for my skill development. Highly recommend!',
+                  avatar: '👨‍🎓'
+                },
+                {
+                  name: 'Ananya Patel',
+                  role: 'BS2023, Mathematics',
+                  content: 'Great platform to connect with talented peers and learn new things. The community is very supportive.',
+                  avatar: '👩‍🔬'
+                }
+              ].map((testimonial, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 + index * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="text-4xl mb-4">{testimonial.avatar}</div>
+                  <p className="text-white/80 mb-4 italic">"{testimonial.content}"</p>
+                  <div className="text-white font-semibold">{testimonial.name}</div>
+                  <div className="text-white/60 text-sm">{testimonial.role}</div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* FAQ Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="mt-16"
+          >
+            <h2 className="text-3xl font-bold text-white text-center mb-12">Frequently Asked Questions</h2>
+            <div className="max-w-3xl mx-auto space-y-6">
+              {[
+                {
+                  question: 'Who can join Tesseract?',
+                  answer: 'Any IITM BS student with a valid @ds.study.iitm.ac.in or @es.study.iitm.ac.in email address can join.'
+                },
+                {
+                  question: 'What is the difference between Basic and Premium membership?',
+                  answer: 'Basic membership is free and gives you access to public events and basic games. Premium membership includes priority registration, exclusive games, advanced analytics, and additional perks.'
+                },
+                {
+                  question: 'How do I upgrade my membership?',
+                  answer: 'You can upgrade your membership anytime from your dashboard or by visiting the membership page.'
+                },
+                {
+                  question: 'Are there any hidden fees?',
+                  answer: 'No, there are no hidden fees. Basic membership is completely free, and premium membership has transparent pricing.'
+                }
+              ].map((faq, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.0 + index * 0.1 }}
+                  className="glass rounded-2xl p-6"
+                >
+                  <h3 className="text-lg font-semibold text-white mb-2">{faq.question}</h3>
+                  <p className="text-white/70">{faq.answer}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default Membership;
