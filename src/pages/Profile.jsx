@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import { Link, useNavigate } from 'react-router-dom';
@@ -18,7 +18,67 @@ const Profile = () => {
     }
   });
   const [loading, setLoading] = useState(true);
+  const canvasRef = useRef(null);
   const navigate = useNavigate();
+
+  // Particle effect for background
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    try {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      const particles = [];
+      const particleCount = 50;
+      
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 0.5,
+          speedY: (Math.random() - 0.5) * 0.5,
+          opacity: Math.random() * 0.5 + 0.2
+        });
+      }
+      
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(particle => {
+          particle.x += particle.speedX;
+          particle.y += particle.speedY;
+          
+          if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1;
+          if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1;
+          
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(147, 51, 234, ${particle.opacity})`;
+          ctx.fill();
+        });
+        
+        requestAnimationFrame(animate);
+      };
+      
+      animate();
+      
+      const handleResize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    } catch (error) {
+      console.error('Canvas effect error:', error);
+    }
+  }, []);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user')) || {
@@ -104,18 +164,42 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+        <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
         <Navbar />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="loading-spinner"></div>
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="w-20 h-20 border-4 border-purple-500 border-t-transparent rounded-full"
+          />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
+      
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ x: [0, 100, 0], y: [0, -100, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ left: '10%', top: '20%' }}
+        />
+        <motion.div
+          animate={{ x: [0, -100, 0], y: [0, 100, 0] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ right: '10%', bottom: '20%' }}
+        />
+      </div>
+
+      <div className="relative z-10">
+        <Navbar />
       
       <section className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
@@ -335,6 +419,7 @@ const Profile = () => {
           </motion.div>
         </div>
       </section>
+      </div>
     </div>
   );
 };

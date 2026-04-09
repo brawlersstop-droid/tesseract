@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/layout/Navbar';
 
 const GameTemplate = () => {
   const { gameId } = useParams();
@@ -11,6 +11,66 @@ const GameTemplate = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [highScore, setHighScore] = useState(0);
+  const canvasRef = useRef(null);
+
+  // Particle effect for background
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    try {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      const particles = [];
+      const particleCount = 60;
+      
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 0.5,
+          speedY: (Math.random() - 0.5) * 0.5,
+          opacity: Math.random() * 0.5 + 0.2
+        });
+      }
+      
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(particle => {
+          particle.x += particle.speedX;
+          particle.y += particle.speedY;
+          
+          if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1;
+          if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1;
+          
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(147, 51, 234, ${particle.opacity})`;
+          ctx.fill();
+        });
+        
+        requestAnimationFrame(animate);
+      };
+      
+      animate();
+      
+      const handleResize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    } catch (error) {
+      console.error('Canvas effect error:', error);
+    }
+  }, []);
 
   // Mock game data - in real app, this would come from API
   const gameData = {
@@ -102,16 +162,33 @@ const GameTemplate = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
       <Navbar />
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ x: [0, 100, 0], y: [0, -100, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ left: '10%', top: '20%' }}
+        />
+        <motion.div
+          animate={{ x: [0, -100, 0], y: [0, 100, 0] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ right: '10%', bottom: '20%' }}
+        />
+      </div>
+
       {/* Game Header */}
       <section className="pt-24 pb-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
             className="flex items-center justify-between mb-8"
           >
             <div className="flex items-center space-x-4">
@@ -119,7 +196,7 @@ const GameTemplate = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="p-2 glass rounded-lg hover:bg-white/20 transition-all"
+                  className="p-2 bg-white/10 border border-white/20 rounded-lg hover:bg-white/20 transition-all"
                 >
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -150,7 +227,7 @@ const GameTemplate = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="glass rounded-2xl p-4 mb-8"
+            className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 mb-8 border border-white/20"
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
@@ -194,7 +271,7 @@ const GameTemplate = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="glass rounded-3xl p-8 min-h-[500px] relative overflow-hidden"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 min-h-[500px] relative overflow-hidden border border-white/20"
           >
             <AnimatePresence mode="wait">
               {!isPlaying && !gameOver && (
@@ -205,7 +282,13 @@ const GameTemplate = () => {
                   exit={{ opacity: 0 }}
                   className="flex flex-col items-center justify-center h-[400px]"
                 >
-                  <div className="text-6xl mb-6 animate-float">{game.icon}</div>
+                  <motion.div
+                    animate={{ y: [0, -20, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="text-6xl mb-6"
+                  >
+                    {game.icon}
+                  </motion.div>
                   <h2 className="text-3xl font-bold text-white mb-4">Ready to Play?</h2>
                   <p className="text-white/70 text-center max-w-md mb-8">
                     Get ready to challenge yourself in {game.name}. 
@@ -215,7 +298,7 @@ const GameTemplate = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={startGame}
-                    className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 btn-hover"
+                    className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300"
                   >
                     Start Game
                   </motion.button>
@@ -242,7 +325,7 @@ const GameTemplate = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={pauseGame}
-                        className="px-6 py-3 glass text-white font-semibold rounded-full hover:bg-white/20 transition-all"
+                        className="px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-full hover:bg-white/20 transition-all"
                       >
                         {isPaused ? 'Resume' : 'Pause'}
                       </motion.button>
@@ -282,7 +365,7 @@ const GameTemplate = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={restartGame}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full hover:shadow-lg transition-all"
+                        className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full hover:shadow-lg hover:shadow-purple-500/50 transition-all"
                       >
                         Play Again
                       </motion.button>
@@ -290,7 +373,7 @@ const GameTemplate = () => {
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="px-6 py-3 glass text-white font-semibold rounded-full hover:bg-white/20 transition-all"
+                          className="px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-full hover:bg-white/20 transition-all"
                         >
                           Exit Game
                         </motion.button>
@@ -337,7 +420,7 @@ const GameTemplate = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={pauseGame}
-                className="px-6 py-3 glass text-white font-semibold rounded-full hover:bg-white/20 transition-all"
+                className="px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-full hover:bg-white/20 transition-all"
               >
                 {isPaused ? 'Resume' : 'Pause'}
               </motion.button>
@@ -345,7 +428,7 @@ const GameTemplate = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={restartGame}
-                className="px-6 py-3 glass text-white font-semibold rounded-full hover:bg-white/20 transition-all"
+                className="px-6 py-3 bg-white/10 border border-white/20 text-white font-semibold rounded-full hover:bg-white/20 transition-all"
               >
                 Restart
               </motion.button>
@@ -354,7 +437,7 @@ const GameTemplate = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={exitGame}
-                  className="px-6 py-3 glass text-red-400 font-semibold rounded-full hover:bg-red-500/20 transition-all"
+                  className="px-6 py-3 bg-white/10 border border-red-500/30 text-red-400 font-semibold rounded-full hover:bg-red-500/20 transition-all"
                 >
                   Exit Game
                 </motion.button>

@@ -1,30 +1,72 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/layout/Navbar';
 import Hero from '../components/Hero';
 import GameCard from '../components/GameCard';
 import Footer from '../components/Footer';
 
 const Home = () => {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef(null);
 
+  // Particle effect for background
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    try {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      const particles = [];
+      const particleCount = 60;
+      
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 0.5,
+          speedY: (Math.random() - 0.5) * 0.5,
+          opacity: Math.random() * 0.5 + 0.2
+        });
+      }
+      
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(particle => {
+          particle.x += particle.speedX;
+          particle.y += particle.speedY;
+          
+          if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1;
+          if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1;
+          
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(147, 51, 234, ${particle.opacity})`;
+          ctx.fill();
+        });
+        
+        requestAnimationFrame(animate);
+      };
+      
+      animate();
+      
+      const handleResize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    } catch (error) {
+      console.error('Canvas effect error:', error);
+    }
   }, []);
-
-  const floatingElements = [
-    { id: 1, x: 10, y: 20, size: 80, color: 'from-purple-500/20 to-blue-500/20' },
-    { id: 2, x: 80, y: 60, size: 60, color: 'from-blue-500/20 to-cyan-500/20' },
-    { id: 3, x: 30, y: 80, size: 100, color: 'from-cyan-500/20 to-purple-500/20' },
-    { id: 4, x: 70, y: 30, size: 40, color: 'from-purple-500/20 to-pink-500/20' },
-    { id: 5, x: 50, y: 50, size: 120, color: 'from-blue-500/20 to-purple-500/20' }
-  ];
 
   // Mock game data
   const featuredGames = [
@@ -110,11 +152,36 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       
-      {/* Hero Section */}
-      <Hero />
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ x: [0, 100, 0], y: [0, -100, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ left: '10%', top: '20%' }}
+        />
+        <motion.div
+          animate={{ x: [0, -100, 0], y: [0, 100, 0] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ right: '10%', bottom: '20%' }}
+        />
+        <motion.div
+          animate={{ x: [0, 50, 0], y: [0, 50, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-15"
+          style={{ left: '50%', top: '60%' }}
+        />
+      </div>
+
+      <div className="relative z-10">
+        <Navbar />
+        
+        {/* Hero Section */}
+        <Hero />
 
       {/* Featured Games Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
@@ -246,6 +313,7 @@ const Home = () => {
       </section>
 
       <Footer />
+      </div>
     </div>
   );
 };

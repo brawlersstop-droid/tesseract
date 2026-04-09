@@ -1,383 +1,380 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import Navbar from '../components/Navbar';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/ui/Toast';
+import apiService from '../services/api';
+import Navbar from '../components/layout/Navbar';
 
 const Dashboard = () => {
-  const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hoveredCard, setHoveredCard] = useState(null);
+  const canvasRef = useRef(null);
+  const { user, isGuest, isMember, isCore, isAdmin, hasMembership } = useAuth();
+  const { addToast } = useToast();
 
+  // Particle effect for background
   useEffect(() => {
-    // Mock user data
-    const userData = JSON.parse(localStorage.getItem('user')) || {
-      fullName: 'John Doe',
-      email: 'john.doe@ds.study.iitm.ac.in',
-      studentId: 'BS20231234',
-      role: 'guest',
-      joinedAt: '2024-01-15T10:30:00Z',
-      avatar: '👤'
-    };
-    setUser(userData);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     
-    // Simulate loading
-    setTimeout(() => setLoading(false), 1000);
+    try {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      const particles = [];
+      const particleCount = 60;
+      
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 0.5,
+          speedY: (Math.random() - 0.5) * 0.5,
+          opacity: Math.random() * 0.5 + 0.2
+        });
+      }
+      
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(particle => {
+          particle.x += particle.speedX;
+          particle.y += particle.speedY;
+          
+          if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1;
+          if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1;
+          
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(147, 51, 234, ${particle.opacity})`;
+          ctx.fill();
+        });
+        
+        requestAnimationFrame(animate);
+      };
+      
+      animate();
+      
+      const handleResize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    } catch (error) {
+      console.error('Canvas effect error:', error);
+    }
   }, []);
 
-  const mockData = {
-    overview: {
-      stats: [
-        { label: 'Events Joined', value: '12', icon: '📅', color: 'from-blue-500 to-cyan-500' },
-        { label: 'Games Played', value: '45', icon: '🎮', color: 'from-purple-500 to-pink-500' },
-        { label: 'Total Score', value: '2,450', icon: '⭐', color: 'from-yellow-500 to-orange-500' },
-        { label: 'Rank', value: '#23', icon: '🏆', color: 'from-green-500 to-emerald-500' }
+  useEffect(() => {
+    // Mock data since no backend exists
+    const mockDashboardData = {
+      totalPoints: 12500,
+      eventsParticipated: 12,
+      gamesPlayed: 45,
+      rank: 15,
+      upcomingEvents: [
+        { id: 1, name: 'Coding Challenge', date: '2025-01-20' },
+        { id: 2, name: 'Hackathon 2025', date: '2025-02-15' }
       ],
       recentActivity: [
-        { type: 'game', name: 'Speed Rush', score: 450, time: '2 hours ago', icon: '⚡' },
-        { type: 'event', name: 'Puzzle Championship', status: 'Joined', time: '1 day ago', icon: '🧩' },
-        { type: 'game', name: 'Strategy Quest', score: 320, time: '2 days ago', icon: '♟️' },
-        { type: 'achievement', name: 'Speed Demon', status: 'Unlocked', time: '3 days ago', icon: '🏅' }
+        { id: 1, type: 'game', name: 'Puzzle Master', score: 950 },
+        { id: 2, type: 'event', name: 'Coding Challenge', status: 'completed' }
       ]
-    },
-    events: [
-      {
-        id: 1,
-        name: 'Speed Rush Championship',
-        date: '2024-04-15',
-        time: '6:00 PM',
-        participants: 45,
-        maxParticipants: 64,
-        status: 'registered',
-        category: 'tournament'
-      },
-      {
-        id: 2,
-        name: 'Game Development Workshop',
-        date: '2024-04-18',
-        time: '4:00 PM',
-        participants: 28,
-        maxParticipants: 40,
-        status: 'available',
-        category: 'workshop'
-      },
-      {
-        id: 3,
-        name: 'Puzzle Masters Meetup',
-        date: '2024-04-20',
-        time: '7:00 PM',
-        participants: 32,
-        maxParticipants: 50,
-        status: 'registered',
-        category: 'social'
-      }
-    ],
-    games: [
-      {
-        id: 1,
-        name: 'Speed Rush',
-        highScore: 450,
-        plays: 12,
-        category: 'action',
-        icon: '⚡',
-        rank: 15
-      },
-      {
-        id: 2,
-        name: 'Puzzle Master',
-        highScore: 320,
-        plays: 8,
-        category: 'puzzle',
-        icon: '🧩',
-        rank: 23
-      },
-      {
-        id: 3,
-        name: 'Strategy Quest',
-        highScore: 280,
-        plays: 5,
-        category: 'strategy',
-        icon: '♟️',
-        rank: 31
-      }
-    ],
-    leaderboard: [
-      { rank: 1, name: 'Alice Chen', score: 5420, avatar: '👩‍🎓' },
-      { rank: 2, name: 'Bob Kumar', score: 4890, avatar: '👨‍💻' },
-      { rank: 3, name: 'Charlie Singh', score: 4560, avatar: '🧑‍🔬' },
-      { rank: 4, name: 'Diana Patel', score: 4230, avatar: '👩‍🔬' },
-      { rank: 5, name: 'Eve Wilson', score: 3980, avatar: '👩‍💼' },
-      { rank: 23, name: 'You', score: 2450, avatar: '👤', isCurrentUser: true }
-    ]
-  };
+    };
+    setDashboardData(mockDashboardData);
+    setLoading(false);
+  }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
         <Navbar />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="loading-spinner"></div>
+        <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="w-20 h-20 border-4 border-purple-500 border-t-transparent rounded-full"
+          />
         </div>
       </div>
     );
   }
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        delayChildren: 0.3,
-        staggerChildren: 0.1
-      }
+  const quickActions = [
+    { 
+      title: 'Browse Events', 
+      description: 'Discover upcoming events and competitions',
+      icon: '📅',
+      gradient: 'from-blue-500 to-cyan-500',
+      link: '/events',
+      available: !isGuest
+    },
+    { 
+      title: 'Play Games', 
+      description: 'Challenge yourself with our games',
+      icon: '🎮',
+      gradient: 'from-purple-500 to-pink-500',
+      link: '/games',
+      available: !isGuest
+    },
+    { 
+      title: 'View Leaderboard', 
+      description: 'See top performers and rankings',
+      icon: '🏆',
+      gradient: 'from-green-500 to-emerald-500',
+      link: '/leaderboard',
+      available: !isGuest
+    },
+    { 
+      title: 'Admin Panel', 
+      description: 'Manage system and users',
+      icon: '⚙️',
+      gradient: 'from-orange-500 to-red-500',
+      link: '/admin',
+      available: isAdmin
     }
-  };
+  ];
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.6,
-        ease: [0.6, -0.05, 0.01, 0.9]
-      }
-    }
-  };
-
-  const renderOverview = () => (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {mockData.overview.stats.map((stat, index) => (
-          <motion.div key={index} variants={itemVariants} whileHover={{ y: -5 }}>
-            <div className="glass rounded-2xl p-6 text-center hover:bg-white/10 transition-all">
-              <div className={`w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r ${stat.color} flex items-center justify-center text-2xl`}>
-                {stat.icon}
-              </div>
-              <div className="text-3xl font-bold text-white mb-2">{stat.value}</div>
-              <div className="text-white/70 text-sm">{stat.label}</div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Recent Activity */}
-      <motion.div variants={itemVariants} className="glass rounded-2xl p-6">
-        <h3 className="text-xl font-bold text-white mb-4">Recent Activity</h3>
-        <div className="space-y-4">
-          {mockData.overview.recentActivity.map((activity, index) => (
-            <motion.div
-              key={index}
-              variants={itemVariants}
-              className="flex items-center justify-between p-4 glass rounded-xl hover:bg-white/5 transition-all"
-            >
-              <div className="flex items-center space-x-4">
-                <div className="text-2xl">{activity.icon}</div>
-                <div>
-                  <div className="text-white font-medium">{activity.name}</div>
-                  <div className="text-white/60 text-sm">
-                    {activity.score && `Score: ${activity.score} • `}
-                    {activity.status}
-                  </div>
-                </div>
-              </div>
-              <div className="text-white/60 text-sm">{activity.time}</div>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-
-  const renderEvents = () => (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-      <h3 className="text-2xl font-bold text-white">Your Events</h3>
-      <div className="grid gap-6">
-        {mockData.events.map((event) => (
-          <motion.div key={event.id} variants={itemVariants} whileHover={{ x: 5 }}>
-            <div className="glass rounded-2xl p-6 hover:bg-white/10 transition-all">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xl font-bold text-white mb-2">{event.name}</h4>
-                  <div className="flex items-center space-x-4 text-white/60 text-sm">
-                    <span>📅 {new Date(event.date).toLocaleDateString()}</span>
-                    <span>⏰ {event.time}</span>
-                    <span>👥 {event.participants}/{event.maxParticipants}</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    event.status === 'registered' 
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  }`}>
-                    {event.status === 'registered' ? 'Registered' : 'Available'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  );
-
-  const renderGames = () => (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-      <h3 className="text-2xl font-bold text-white">Your Games</h3>
-      <div className="grid gap-6">
-        {mockData.games.map((game) => (
-          <motion.div key={game.id} variants={itemVariants} whileHover={{ scale: 1.02 }}>
-            <div className="glass rounded-2xl p-6 hover:bg-white/10 transition-all">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="text-3xl">{game.icon}</div>
-                  <div>
-                    <h4 className="text-xl font-bold text-white mb-1">{game.name}</h4>
-                    <div className="flex items-center space-x-4 text-white/60 text-sm">
-                      <span>🏆 Rank #{game.rank}</span>
-                      <span>⭐ High Score: {game.highScore}</span>
-                      <span>🎮 Plays: {game.plays}</span>
-                    </div>
-                  </div>
-                </div>
-                <Link to={`/game/${game.id}`}>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-6 py-3 btn-gradient text-white font-bold rounded-xl hover:shadow-xl transition-all btn-hover"
-                  >
-                    Play Now
-                  </motion.button>
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  );
-
-  const renderLeaderboard = () => (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-      <h3 className="text-2xl font-bold text-white">Global Leaderboard</h3>
-      <div className="glass rounded-2xl p-6">
-        <div className="space-y-4">
-          {mockData.leaderboard.map((player) => (
-            <motion.div
-              key={player.rank}
-              variants={itemVariants}
-              className={`flex items-center justify-between p-4 rounded-xl transition-all ${
-                player.isCurrentUser 
-                  ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30' 
-                  : 'hover:bg-white/5'
-              }`}
-            >
-              <div className="flex items-center space-x-4">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  player.rank <= 3 ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-black' : 'text-white/60'
-                }`}>
-                  {player.rank}
-                </div>
-                <div className="text-2xl">{player.avatar}</div>
-                <div className="text-white font-medium">{player.name}</div>
-              </div>
-              <div className="text-xl font-bold text-white">{player.score.toLocaleString()}</div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
-
-  const tabs = [
-    { id: 'overview', name: 'Overview', icon: '📊' },
-    { id: 'events', name: 'Events', icon: '📅' },
-    { id: 'games', name: 'Games', icon: '🎮' },
-    { id: 'leaderboard', name: 'Leaderboard', icon: '🏆' }
+  const stats = [
+    { label: 'Events Joined', value: dashboardData?.eventsJoined || 0, icon: '📅', gradient: 'from-blue-600 to-cyan-600' },
+    { label: 'Games Played', value: dashboardData?.gamesPlayed || 0, icon: '🎮', gradient: 'from-purple-600 to-pink-600' },
+    { label: 'Points Earned', value: dashboardData?.pointsEarned || 0, icon: '⭐', gradient: 'from-green-600 to-emerald-600' },
+    { label: 'Achievements', value: dashboardData?.achievements || 0, icon: '🏆', gradient: 'from-orange-600 to-red-600' }
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
       <Navbar />
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       
-      <section className="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {/* User Header */}
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -100, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ left: '10%', top: '20%' }}
+        />
+        <motion.div
+          animate={{
+            x: [0, -100, 0],
+            y: [0, 100, 0],
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ right: '10%', bottom: '20%' }}
+        />
+      </div>
+
+      <div className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
+          {/* Futuristic Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="glass rounded-3xl p-8 mb-8"
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="mb-12"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-6">
-                <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-3xl">
-                  {user?.avatar}
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-white mb-2">{user?.fullName}</h1>
-                  <div className="flex items-center space-x-4 text-white/60">
-                    <span>📧 {user?.email}</span>
-                    <span>🆔 {user?.studentId}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      user?.role === 'member' 
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                    }`}>
-                      {user?.role === 'member' ? 'Member' : 'Guest'}
-                    </span>
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl blur-xl opacity-30"></div>
+              <div className="relative bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-5xl font-bold text-white mb-3 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                      Welcome back, {user?.name || 'User'}!
+                    </h1>
+                    <p className="text-gray-300 text-lg">
+                      Your digital adventure continues
+                    </p>
                   </div>
+                  <motion.div
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/50"
+                  >
+                    <span className="text-3xl">👋</span>
+                  </motion.div>
                 </div>
               </div>
-              {user?.role === 'guest' && (
-                <Link to="/membership">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-6 py-3 btn-gradient text-white font-bold rounded-xl hover:shadow-xl transition-all btn-hover"
-                  >
-                    Become Member
-                  </motion.button>
-                </Link>
-              )}
             </div>
           </motion.div>
 
-          {/* Navigation Tabs */}
+          {/* Stats Cards */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex flex-wrap gap-2 mb-8"
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
           >
-            {tabs.map((tab) => (
-              <motion.button
-                key={tab.id}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
-                  activeTab === tab.id
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
-                    : 'glass text-white hover:bg-white/20'
-                }`}
+            {stats.map((stat, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ y: -10, scale: 1.02 }}
+                onHoverStart={() => setHoveredCard(index)}
+                onHoverEnd={() => setHoveredCard(null)}
+                className="relative group"
               >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.name}
-              </motion.button>
+                <div className={`absolute inset-0 bg-gradient-to-r ${stat.gradient} rounded-2xl blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-300 shadow-2xl`}></div>
+                <div className="relative bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <motion.div
+                      animate={{ rotate: hoveredCard === index ? 360 : 0 }}
+                      transition={{ duration: 0.5 }}
+                      className={`w-14 h-14 bg-gradient-to-r ${stat.gradient} rounded-xl flex items-center justify-center text-3xl shadow-lg`}
+                    >
+                      {stat.icon}
+                    </motion.div>
+                    <motion.div
+                      animate={{ scale: hoveredCard === index ? [1, 1.2, 1] : 1 }}
+                      transition={{ duration: 0.5 }}
+                      className="w-3 h-3 bg-green-400 rounded-full shadow-lg shadow-green-400/50"
+                    />
+                  </div>
+                  <p className="text-gray-300 text-sm font-medium mb-2 uppercase tracking-wider">{stat.label}</p>
+                  <motion.p
+                    animate={{ scale: hoveredCard === index ? 1.1 : 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-4xl font-bold text-white tabular-nums"
+                  >
+                    {stat.value.toLocaleString()}
+                  </motion.p>
+                </div>
+              </motion.div>
             ))}
           </motion.div>
 
-          {/* Tab Content */}
-          <div className="min-h-[400px]">
-            {activeTab === 'overview' && renderOverview()}
-            {activeTab === 'events' && renderEvents()}
-            {activeTab === 'games' && renderGames()}
-            {activeTab === 'leaderboard' && renderLeaderboard()}
-          </div>
+          {/* Quick Actions */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+            className="mb-12"
+          >
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-white/10 bg-gradient-to-r from-white/5 to-transparent">
+                <h3 className="text-2xl font-bold text-white mb-2">Quick Actions</h3>
+                <p className="text-gray-400 text-sm">Jump into the action</p>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {quickActions.filter(action => action.available).map((action, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                      whileHover={{ y: -10, scale: 1.02 }}
+                      className="group"
+                    >
+                      <Link to={action.link}>
+                        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300 h-full cursor-pointer">
+                          <div className="flex flex-col items-center text-center">
+                            <motion.div
+                              whileHover={{ scale: 1.2, rotate: 360 }}
+                              transition={{ duration: 0.5 }}
+                              className={`w-16 h-16 bg-gradient-to-r ${action.gradient} rounded-2xl flex items-center justify-center text-3xl shadow-lg mb-4`}
+                            >
+                              {action.icon}
+                            </motion.div>
+                            <h4 className="text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
+                              {action.title}
+                            </h4>
+                            <p className="text-gray-400 text-sm">{action.description}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Recent Activity */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
+          >
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-white/10 bg-gradient-to-r from-white/5 to-transparent">
+                <h3 className="text-2xl font-bold text-white mb-2">Recent Activity</h3>
+                <p className="text-gray-400 text-sm">Your latest achievements and activities</p>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {dashboardData?.recentActivity?.slice(0, 5).map((activity, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                      whileHover={{ x: 10 }}
+                      className="group flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-300 border border-white/10 hover:border-white/20"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+                          className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full shadow-lg shadow-green-400/50"
+                        />
+                        <div>
+                          <p className="text-white font-medium group-hover:text-blue-400 transition-colors">
+                            {activity.description}
+                          </p>
+                          <p className="text-gray-400 text-sm">{activity.timestamp}</p>
+                        </div>
+                      </div>
+                      <motion.span
+                        whileHover={{ scale: 1.1 }}
+                        className="px-3 py-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 rounded-full text-xs font-medium border border-blue-500/30"
+                      >
+                        {activity.type}
+                      </motion.span>
+                    </motion.div>
+                  )) || (
+                    <div className="text-center py-12">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                        className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4"
+                      >
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </motion.div>
+                      <p className="text-gray-400">No recent activity</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </section>
+      </div>
     </div>
   );
 };

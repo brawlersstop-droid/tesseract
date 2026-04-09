@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import Navbar from '../components/Navbar';
 import { Link, useNavigate } from 'react-router-dom';
+import Navbar from '../components/layout/Navbar';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -14,7 +14,67 @@ const Signup = () => {
   const [showOtp, setShowOtp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const canvasRef = useRef(null);
   const navigate = useNavigate();
+
+  // Particle effect for background
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    try {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      const particles = [];
+      const particleCount = 50;
+      
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 0.5,
+          speedY: (Math.random() - 0.5) * 0.5,
+          opacity: Math.random() * 0.5 + 0.2
+        });
+      }
+      
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(particle => {
+          particle.x += particle.speedX;
+          particle.y += particle.speedY;
+          
+          if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1;
+          if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1;
+          
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(147, 51, 234, ${particle.opacity})`;
+          ctx.fill();
+        });
+        
+        requestAnimationFrame(animate);
+      };
+      
+      animate();
+      
+      const handleResize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    } catch (error) {
+      console.error('Canvas effect error:', error);
+    }
+  }, []);
 
   const validateEmail = (email) => {
     const validDomains = ['@ds.study.iitm.ac.in', '@es.study.iitm.ac.in'];
@@ -106,231 +166,191 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden flex items-center justify-center px-4">
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       
-      <section className="pt-32 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-8"
-          >
-            <h1 className="text-4xl font-bold text-white mb-4">
-              Join Tesseract
-            </h1>
-            <p className="text-white/80">
-              Create your account to get started
-            </p>
-          </motion.div>
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ x: [0, 100, 0], y: [0, -100, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ left: '10%', top: '20%' }}
+        />
+        <motion.div
+          animate={{ x: [0, -100, 0], y: [0, 100, 0] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ right: '10%', bottom: '20%' }}
+        />
+      </div>
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="glass rounded-3xl p-8"
-          >
-            {!showOtp ? (
-              <form onSubmit={handleSendOtp} className="space-y-6">
-                <div>
-                  <label className="block text-white font-medium mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 glass text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
-                    placeholder="Enter your full name"
-                  />
-                </div>
+      <div className="relative z-10">
+        <Navbar />
 
-                <div>
-                  <label className="block text-white font-medium mb-2">
-                    IITM BS Email Address
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 glass text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
-                    placeholder="your.email@ds.study.iitm.ac.in"
-                  />
-                  <p className="text-white/60 text-sm mt-2">
-                    Only @ds.study.iitm.ac.in and @es.study.iitm.ac.in domains are allowed
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-white font-medium mb-2">
-                    Student ID
-                  </label>
-                  <input
-                    type="text"
-                    name="studentId"
-                    value={formData.studentId}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 glass text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
-                    placeholder="e.g., BS2023XXXX"
-                  />
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <input
-                    type="checkbox"
-                    name="agreeToTerms"
-                    checked={formData.agreeToTerms}
-                    onChange={handleInputChange}
-                    className="mt-1 w-4 h-4 text-purple-500 bg-white/10 border-white/30 rounded focus:ring-purple-400 focus:ring-2"
-                  />
-                  <label className="text-white/80 text-sm">
-                    I agree to the{' '}
-                    <Link to="/terms" className="text-purple-400 hover:text-purple-300 transition-colors">
-                      Terms and Conditions
-                    </Link>
-                    {' '}and{' '}
-                    <Link to="/privacy" className="text-purple-400 hover:text-purple-300 transition-colors">
-                      Privacy Policy
-                    </Link>
-                  </label>
-                </div>
-
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl"
-                  >
-                    <p className="text-red-300 text-sm">{error}</p>
-                  </motion.div>
-                )}
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-4 btn-gradient text-white font-bold rounded-xl hover:shadow-xl transition-all duration-300 btn-hover disabled:opacity-50"
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="w-full max-w-md mx-auto mt-20"
+        >
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
+            <div className="p-8">
+              <div className="text-center mb-8">
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/50"
                 >
-                  {isLoading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Sending OTP...
-                    </span>
-                  ) : (
-                    'Create Account'
+                  <span className="text-4xl">🔷</span>
+                </motion.div>
+                <h1 className="text-3xl font-bold text-white mb-2">Join Tesseract</h1>
+                <p className="text-gray-300">Create your account to get started</p>
+              </div>
+
+              {!showOtp ? (
+                <form onSubmit={handleSendOtp} className="space-y-6">
+                  <div>
+                    <label className="block text-white font-medium mb-2">Full Name</label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-medium mb-2">IITM BS Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                      placeholder="your.email@ds.study.iitm.ac.in"
+                    />
+                    <p className="text-white/60 text-sm mt-2">Only @ds.study.iitm.ac.in and @es.study.iitm.ac.in</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-white font-medium mb-2">Student ID</label>
+                    <input
+                      type="text"
+                      name="studentId"
+                      value={formData.studentId}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                      placeholder="e.g., BS2023XXXX"
+                    />
+                  </div>
+
+                  <div className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      name="agreeToTerms"
+                      checked={formData.agreeToTerms}
+                      onChange={handleInputChange}
+                      className="mt-1 w-4 h-4 text-purple-500 bg-white/10 border-white/30 rounded focus:ring-purple-400 focus:ring-2"
+                    />
+                    <label className="text-white/80 text-sm">
+                      I agree to the{' '}
+                      <Link to="/terms" className="text-purple-400 hover:text-purple-300 transition-colors">
+                        Terms
+                      </Link>
+                      {' '}and{' '}
+                      <Link to="/privacy" className="text-purple-400 hover:text-purple-300 transition-colors">
+                        Privacy Policy
+                      </Link>
+                    </label>
+                  </div>
+
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl"
+                    >
+                      <p className="text-red-300 text-sm">{error}</p>
+                    </motion.div>
                   )}
-                </motion.button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyOtp} className="space-y-6">
-                <div>
-                  <label className="block text-white font-medium mb-2">
-                    Enter OTP
-                  </label>
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    required
-                    maxLength={6}
-                    className="w-full px-4 py-3 glass text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all text-center text-2xl tracking-widest"
-                    placeholder="000000"
-                  />
-                  <p className="text-white/60 text-sm mt-2">
-                    OTP sent to {formData.email}
-                  </p>
-                </div>
 
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl"
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 disabled:opacity-50"
                   >
-                    <p className="text-red-300 text-sm">{error}</p>
-                  </motion.div>
-                )}
+                    {isLoading ? 'Sending OTP...' : 'Create Account'}
+                  </motion.button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-6">
+                  <div>
+                    <label className="block text-white font-medium mb-2">Enter OTP</label>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      required
+                      maxLength={6}
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all text-center text-2xl tracking-widest"
+                      placeholder="000000"
+                    />
+                    <p className="text-white/60 text-sm mt-2">OTP sent to {formData.email}</p>
+                  </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  disabled={isLoading || otp.length !== 6}
-                  className="w-full py-4 btn-gradient text-white font-bold rounded-xl hover:shadow-xl transition-all duration-300 btn-hover disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating Account...
-                    </span>
-                  ) : (
-                    'Verify & Create Account'
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl"
+                    >
+                      <p className="text-red-300 text-sm">{error}</p>
+                    </motion.div>
                   )}
-                </motion.button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowOtp(false);
-                    setOtp('');
-                  }}
-                  className="w-full py-3 glass text-white font-semibold rounded-xl hover:bg-white/10 transition-all duration-300"
-                >
-                  Back to Details
-                </button>
-              </form>
-            )}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={isLoading || otp.length !== 6}
+                    className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 disabled:opacity-50"
+                  >
+                    {isLoading ? 'Creating Account...' : 'Verify & Create Account'}
+                  </motion.button>
 
-            <div className="mt-8 text-center">
-              <p className="text-white/60 text-sm">
-                Already have an account?{' '}
-                <Link to="/login" className="text-purple-400 hover:text-purple-300 transition-colors">
-                  Sign in
-                </Link>
-              </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOtp(false);
+                      setOtp('');
+                    }}
+                    className="w-full py-3 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-all duration-300"
+                  >
+                    Back to Details
+                  </button>
+                </form>
+              )}
+
+              <div className="mt-8 text-center">
+                <p className="text-white/60 text-sm">
+                  Already have an account?{' '}
+                  <Link to="/login" className="text-purple-400 hover:text-purple-300 transition-colors">
+                    Sign in
+                  </Link>
+                </p>
+              </div>
             </div>
-          </motion.div>
-
-          {/* Benefits */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-6 space-y-3"
-          >
-            {[
-              { icon: '✨', text: 'Access exclusive events and competitions' },
-              { icon: '🎮', text: 'Play games and climb leaderboards' },
-              { icon: '🏆', text: 'Earn certificates and rewards' },
-              { icon: '🤝', text: 'Connect with IITM BS community' }
-            ].map((benefit, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 + index * 0.1 }}
-                className="flex items-center space-x-3 p-3 glass rounded-xl"
-              >
-                <span className="text-xl">{benefit.icon}</span>
-                <span className="text-white/80 text-sm">{benefit.text}</span>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };

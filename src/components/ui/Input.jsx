@@ -1,0 +1,50 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { cn } from '../../utils/cn';
+
+const Input = React.forwardRef(({ 
+  className, 
+  type = 'text', 
+  error,
+  label,
+  helperText,
+  ...props 
+}, ref) => {
+  return (
+    <div className="space-y-2">
+      {label && (
+        <label className="text-sm font-medium text-gray-700">
+          {label}
+        </label>
+      )}
+      <motion.div
+        whileFocus={{ scale: 1.01 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        <input
+          type={type}
+          className={cn(
+            'flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm',
+            'placeholder:text-gray-400',
+            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            error && 'border-red-500 focus:ring-red-500',
+            className
+          )}
+          ref={ref}
+          {...props}
+        />
+      </motion.div>
+      {error && (
+        <p className="text-sm text-red-600">{error}</p>
+      )}
+      {helperText && !error && (
+        <p className="text-sm text-gray-500">{helperText}</p>
+      )}
+    </div>
+  );
+});
+
+Input.displayName = 'Input';
+
+export { Input };

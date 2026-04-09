@@ -1,15 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import Navbar from '../components/Navbar';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/ui/Toast';
+import Navbar from '../components/layout/Navbar';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
+  const [name, setName] = useState('');
   const [showOtp, setShowOtp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const canvasRef = useRef(null);
   const navigate = useNavigate();
+  const { login, requestOtp } = useAuth();
+  const { addToast } = useToast();
+
+  // Particle effect for background
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    try {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      const particles = [];
+      const particleCount = 50;
+      
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 0.5,
+          speedY: (Math.random() - 0.5) * 0.5,
+          opacity: Math.random() * 0.5 + 0.2
+        });
+      }
+      
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(particle => {
+          particle.x += particle.speedX;
+          particle.y += particle.speedY;
+          
+          if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1;
+          if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1;
+          
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(147, 51, 234, ${particle.opacity})`;
+          ctx.fill();
+        });
+        
+        requestAnimationFrame(animate);
+      };
+      
+      animate();
+      
+      const handleResize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    } catch (error) {
+      console.error('Canvas effect error:', error);
+    }
+  }, []);
 
   const validateEmail = (email) => {
     const validDomains = ['@ds.study.iitm.ac.in', '@es.study.iitm.ac.in'];
@@ -18,232 +83,272 @@ const Login = () => {
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    setError('');
+    setErrors({});
+
+    if (!email) {
+      setErrors({ email: 'Email is required' });
+      return;
+    }
 
     if (!validateEmail(email)) {
-      setError('Only IITM BS email addresses are allowed');
+      setErrors({ email: 'Only IITM BS email addresses are allowed' });
       return;
     }
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setShowOtp(true);
+    try {
+      const response = await requestOtp(email);
+      
+      if (response?.success) {
+        addToast('OTP sent successfully', `Check your email: ${email}`, 'success');
+        setShowOtp(true);
+      } else {
+        const errorMessage = response?.error?.message || 'Failed to send OTP';
+        addToast('Error', errorMessage, 'error');
+        setErrors({ email: errorMessage });
+      }
+    } catch (error) {
+      addToast('Error', 'Network error. Please try again.', 'error');
+      setErrors({ email: 'Network error. Please try again.' });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
-
-  const handleVerifyOtp = async (e) => {
+    const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    setError('');
+    setErrors({});
+
+    if (!otp) {
+      setErrors({ otp: 'OTP is required' });
+      return;
+    }
+
+    if (otp.length !== 6) {
+      setErrors({ otp: 'OTP must be 6 digits' });
+      return;
+    }
+
     setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      // Mock successful login
-      localStorage.setItem('user', JSON.stringify({
-        email,
-        role: 'guest',
-        name: email.split('@')[0]
-      }));
-      navigate('/dashboard');
+    
+    try {
+      const response = await login(email, otp, name);
+      
+      if (response.success) {
+        addToast('Login successful!', `Welcome back${response.data.user.name ? ', ' + response.data.user.name : ''}!`, 'success');
+        
+        // Redirect based on user role
+        const userRole = response.data.user.role;
+        if (userRole === 'GUEST') {
+          navigate('/membership');
+        } else {
+          navigate('/dashboard');
+        }
+      } else {
+        const errorMessage = response?.error?.message || 'Invalid OTP';
+        addToast('Login failed', errorMessage, 'error');
+        setErrors({ otp: errorMessage });
+      }
+    } catch (error) {
+      addToast('Error', 'Network error. Please try again.', 'error');
+      setErrors({ otp: 'Network error. Please try again.' });
+    } finally {
       setIsLoading(false);
-    }, 1500);
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        delayChildren: 0.3,
-        staggerChildren: 0.2
-      }
     }
   };
 
-  const itemVariants = {
-    hidden: { y: 30, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.8,
-        ease: [0.6, -0.05, 0.01, 0.9]
+  const handleResendOtp = async () => {
+    setIsLoading(true);
+    try {
+      const response = await requestOtp(email);
+      if (response?.success) {
+        addToast('OTP resent', 'A new OTP has been sent to your email', 'success');
+      } else {
+        addToast('Error', 'Failed to resend OTP', 'error');
       }
+    } catch (error) {
+      addToast('Error', 'Network error. Please try again.', 'error');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleBack = () => {
+    setShowOtp(false);
+    setOtp('');
+    setErrors({});
   };
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden flex items-center justify-center px-4">
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       
-      <section className="pt-32 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-8"
-          >
-            <h1 className="text-4xl font-bold text-white mb-4">
-              Welcome Back
-            </h1>
-            <p className="text-white/80">
-              Sign in to access Tesseract
-            </p>
-          </motion.div>
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ x: [0, 100, 0], y: [0, -100, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ left: '10%', top: '20%' }}
+        />
+        <motion.div
+          animate={{ x: [0, -100, 0], y: [0, 100, 0] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          style={{ right: '10%', bottom: '20%' }}
+        />
+      </div>
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="glass rounded-3xl p-8"
-          >
+      <div className="relative z-10">
+        <Navbar />
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="w-full max-w-md mx-auto mt-20"
+        >
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
+          <div className="p-8">
+            <div className="text-center mb-8">
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/50"
+              >
+                <span className="text-4xl">🔷</span>
+              </motion.div>
+              <h1 className="text-3xl font-bold text-white mb-2">
+                Welcome to Tesseract
+              </h1>
+              <p className="text-gray-300">
+                {showOtp ? 'Enter the OTP sent to your email' : 'Sign in with your IITM email'}
+              </p>
+            </div>
+            
             {!showOtp ? (
               <form onSubmit={handleSendOtp} className="space-y-6">
                 <div>
-                  <label className="block text-white font-medium mb-2">
-                    IITM BS Email Address
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
                   <input
                     type="email"
+                    placeholder="your.email@ds.study.iitm.ac.in"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 glass text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
-                    placeholder="your.email@ds.study.iitm.ac.in"
+                    disabled={isLoading}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                   />
-                  <p className="text-white/60 text-sm mt-2">
-                    Only @ds.study.iitm.ac.in and @es.study.iitm.ac.in domains are allowed
-                  </p>
+                  {errors.email && (
+                    <p className="mt-2 text-sm text-red-400">{errors.email}</p>
+                  )}
+                  <p className="mt-2 text-xs text-gray-400">Use your IITM BS email address</p>
                 </div>
-
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl"
-                  >
-                    <p className="text-red-300 text-sm">{error}</p>
-                  </motion.div>
-                )}
-
+                
                 <motion.button
+                  type="submit"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  type="submit"
                   disabled={isLoading}
-                  className="w-full py-4 btn-gradient text-white font-bold rounded-xl hover:shadow-xl transition-all duration-300 btn-hover disabled:opacity-50"
+                  className="w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 disabled:opacity-50"
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
                       Sending OTP...
                     </span>
-                  ) : (
-                    'Send OTP'
-                  )}
+                  ) : 'Send OTP'}
                 </motion.button>
               </form>
             ) : (
               <form onSubmit={handleVerifyOtp} className="space-y-6">
-                <div>
-                  <label className="block text-white font-medium mb-2">
-                    Enter OTP
-                  </label>
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    required
-                    maxLength={6}
-                    className="w-full px-4 py-3 glass text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all text-center text-2xl tracking-widest"
-                    placeholder="000000"
-                  />
-                  <p className="text-white/60 text-sm mt-2">
-                    OTP sent to {email}
+                <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                  <p className="text-sm text-gray-300">
+                    OTP sent to: <span className="font-medium text-white">{email}</span>
                   </p>
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="text-purple-400 hover:text-purple-300 text-sm mt-2 transition-colors"
+                  >
+                    Change email
+                  </button>
                 </div>
 
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl"
-                  >
-                    <p className="text-red-300 text-sm">{error}</p>
-                  </motion.div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">One-Time Password</label>
+                  <input
+                    type="text"
+                    placeholder="Enter 6-digit OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    disabled={isLoading}
+                    maxLength={6}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-center text-2xl tracking-widest"
+                  />
+                  {errors.otp && (
+                    <p className="mt-2 text-sm text-red-400">{errors.otp}</p>
+                  )}
+                </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
+                  <input
+                    type="text"
+                    placeholder="Your name (optional)"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={isLoading}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                  />
+                  <p className="mt-2 text-xs text-gray-400">Only required for first-time users</p>
+                </div>
+                
                 <motion.button
+                  type="submit"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  disabled={isLoading || otp.length !== 6}
-                  className="w-full py-4 btn-gradient text-white font-bold rounded-xl hover:shadow-xl transition-all duration-300 btn-hover disabled:opacity-50"
+                  disabled={isLoading}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 disabled:opacity-50"
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
                       Verifying...
                     </span>
-                  ) : (
-                    'Verify & Sign In'
-                  )}
+                  ) : 'Verify OTP & Login'}
                 </motion.button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowOtp(false);
-                    setOtp('');
-                  }}
-                  className="w-full py-3 glass text-white font-semibold rounded-xl hover:bg-white/10 transition-all duration-300"
-                >
-                  Back to Email
-                </button>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={isLoading}
+                    className="text-purple-400 hover:text-purple-300 text-sm disabled:opacity-50 transition-colors"
+                  >
+                    Didn't receive OTP? Resend
+                  </button>
+                </div>
               </form>
             )}
-
-            <div className="mt-8 text-center">
-              <p className="text-white/60 text-sm">
-                New to Tesseract?{' '}
-                <Link to="/signup" className="text-purple-400 hover:text-purple-300 transition-colors">
-                  Create an account
+            
+            <div className="mt-8 pt-6 border-t border-white/10 text-center">
+              <p className="text-sm text-gray-400">
+                Don't have an account?{' '}
+                <Link to="/about" className="text-purple-400 hover:text-purple-300 font-medium transition-colors">
+                  Learn about Tesseract
                 </Link>
               </p>
             </div>
-          </motion.div>
-
-          {/* Security Notice */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-6 p-4 glass rounded-2xl"
-          >
-            <div className="flex items-start space-x-3">
-              <svg className="w-5 h-5 text-green-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <div>
-                <h4 className="text-white font-semibold text-sm">Secure Platform</h4>
-                <p className="text-white/60 text-xs mt-1">
-                  Your data is protected with enterprise-grade security. Only IITM BS members have access.
-                </p>
-              </div>
-            </div>
-          </motion.div>
+          </div>
         </div>
-      </section>
+      </motion.div>
+      </div>
     </div>
   );
 };
