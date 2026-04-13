@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
+import Navbar from './components/layout/Navbar';
 import Home from './pages/Home';
 import Games from './pages/Games';
 import GameTemplate from './pages/GameTemplate';
@@ -25,6 +26,7 @@ function App() {
       <ToastProvider>
         <AuthProvider>
           <div className="App">
+            <Navbar />
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -33,6 +35,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/games" element={<Games />} />
+                <Route path="/games/:gameId/play" element={<GameTemplate />} />
                 <Route path="/game/:gameId" element={<GameTemplate />} />
                 <Route path="/join" element={<Join />} />
                 <Route path="/about" element={<About />} />

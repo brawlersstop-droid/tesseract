@@ -53,13 +53,10 @@ const Navbar = () => {
   };
 
   return (
-    <motion.nav
+    <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white/80 backdrop-blur-sm'
+        scrolled ? 'bg-slate-900/30 backdrop-blur-xl shadow-lg border-b border-white/10' : 'bg-slate-900/10 backdrop-blur-md border-b border-white/5'
       }`}
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5 }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -68,7 +65,7 @@ const Navbar = () => {
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">T</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">Tesseract</span>
+            <span className="text-xl font-bold text-white">Tesseract</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -77,8 +74,8 @@ const Navbar = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
-                  location.pathname === item.path ? 'text-blue-600' : 'text-gray-700'
+                className={`text-sm font-medium transition-colors hover:text-purple-300 ${
+                  location.pathname === item.path ? 'text-purple-300' : 'text-white'
                 }`}
               >
                 {item.label}
@@ -93,16 +90,16 @@ const Navbar = () => {
                 <Badge variant={getRoleBadgeVariant(user.role)}>
                   {user.role}
                 </Badge>
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-white">
                   {user.name || user.email}
                 </span>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
+                <Button variant="outline" size="sm" onClick={handleLogout} className="border-white/20 text-white hover:bg-white/10">
                   Logout
                 </Button>
               </>
             ) : (
               <Link to="/login">
-                <Button size="sm">Login</Button>
+                <Button size="sm" className="bg-purple-500 hover:bg-purple-600">Login</Button>
               </Link>
             )}
           </div>
@@ -139,15 +136,15 @@ const Navbar = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="md:hidden py-4 border-t border-gray-200"
+            className="md:hidden py-4 border-t border-white/10"
           >
             <div className="flex flex-col space-y-3">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`text-sm font-medium px-3 py-2 rounded-md transition-colors hover:bg-gray-100 ${
-                    location.pathname === item.path ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
+                  className={`text-sm font-medium px-3 py-2 rounded-md transition-colors hover:bg-white/10 ${
+                    location.pathname === item.path ? 'text-purple-300 bg-white/10' : 'text-white'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -156,13 +153,13 @@ const Navbar = () => {
               ))}
               
               {isAuthenticated && user ? (
-                <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="border-t border-white/10 pt-3 mt-3">
                   <div className="px-3 py-2">
                     <div className="flex items-center space-x-2">
                       <Badge variant={getRoleBadgeVariant(user.role)}>
                         {user.role}
                       </Badge>
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-medium text-white">
                         {user.name || user.email}
                       </span>
                     </div>
@@ -170,16 +167,16 @@ const Navbar = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="ml-3"
+                    className="ml-3 border-white/20 text-white hover:bg-white/10"
                     onClick={handleLogout}
                   >
                     Logout
                   </Button>
                 </div>
               ) : (
-                <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="border-t border-white/10 pt-3 mt-3">
                   <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                    <Button size="sm" className="ml-3">Login</Button>
+                    <Button size="sm" className="ml-3 bg-purple-500 hover:bg-purple-600">Login</Button>
                   </Link>
                 </div>
               )}
@@ -187,7 +184,7 @@ const Navbar = () => {
           </motion.div>
         )}
       </div>
-    </motion.nav>
+    </nav>
   );
 };
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import Navbar from '../components/layout/Navbar';
 import Hero from '../components/Hero';
 import GameCard from '../components/GameCard';
 import Footer from '../components/Footer';
@@ -178,8 +177,6 @@ const Home = () => {
       </div>
 
       <div className="relative z-10">
-        <Navbar />
-        
         {/* Hero Section */}
         <Hero />
 

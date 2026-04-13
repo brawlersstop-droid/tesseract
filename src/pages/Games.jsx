@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/ui/Toast';
 import apiService from '../services/api';
-import Navbar from '../components/layout/Navbar';
 
 const Games = () => {
   const [games, setGames] = useState([]);
@@ -124,7 +123,6 @@ const Games = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-        <Navbar />
         <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
         <div className="relative z-10 min-h-screen flex items-center justify-center">
           <motion.div
@@ -139,7 +137,6 @@ const Games = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      <Navbar />
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       
       {/* Animated gradient orbs */}

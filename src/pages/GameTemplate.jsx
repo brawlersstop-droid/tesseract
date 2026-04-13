@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
-import Navbar from '../components/layout/Navbar';
 
 const GameTemplate = () => {
   const { gameId } = useParams();
@@ -163,7 +162,6 @@ const GameTemplate = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      <Navbar />
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       
       {/* Animated gradient orbs */}

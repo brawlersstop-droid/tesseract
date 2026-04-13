@@ -23,37 +23,34 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('accessToken');
         const userStr = localStorage.getItem('user');
         
+        // First, try to use stored user data (works without backend)
+        if (userStr) {
+          try {
+            const storedUser = JSON.parse(userStr);
+            setUser(storedUser);
+            setIsAuthenticated(true);
+          } catch (parseError) {
+            console.error('Failed to parse stored user:', parseError);
+          }
+        }
+        
+        // Then try to verify with API if token exists
         if (token) {
-          // Try to get current user from API
           try {
             const response = await apiService.getCurrentUser();
             if (response?.success) {
               setUser(response.data);
               setIsAuthenticated(true);
-            } else {
-              // Token invalid, clear it
-              apiService.clearTokens();
+              // Update stored user data with fresh data
+              localStorage.setItem('user', JSON.stringify(response.data));
             }
           } catch (apiError) {
-            // API failed (no backend), try to use stored user data
+            // API failed (no backend), but we already set user from localStorage above
             console.error('API call failed, using stored user data:', apiError);
-            if (userStr) {
-              try {
-                const storedUser = JSON.parse(userStr);
-                setUser(storedUser);
-                setIsAuthenticated(true);
-              } catch (parseError) {
-                console.error('Failed to parse stored user:', parseError);
-                apiService.clearTokens();
-              }
-            } else {
-              apiService.clearTokens();
-            }
           }
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        apiService.clearTokens();
       } finally {
         setLoading(false);
       }
